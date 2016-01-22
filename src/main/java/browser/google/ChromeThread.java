@@ -53,7 +53,7 @@ public class ChromeThread extends BrowserThread {
 	protected void quit() 
 	{
 		driver.close();
-		super.finished = true;
+		super.state = BrowserThread.THREAD_STATE_FINISHED;
 		
 	}
 

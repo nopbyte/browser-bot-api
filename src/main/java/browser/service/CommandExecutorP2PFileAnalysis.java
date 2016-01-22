@@ -24,57 +24,72 @@ public class CommandExecutorP2PFileAnalysis implements CommandExecutor{
 	@Override
 	public CommandResult execute(Command c) {
 		if(c.getAction().toUpperCase().equals("PREPARE_BROWSER"))
-			return prepareBrowsers(c);
+			return prepareThread(c);
 		else if(c.getAction().toUpperCase().equals("RUN"))
-			return runBrowsers(c);
+			return runThread(c);
 		return new CommandResult(c.getId(), "action_not_understood");
 	}
 
 	//{"action":"RUN"}
-	private CommandResult runBrowsers(Command c) {
-		CommandResult r = finished(c);
-		if(r!=null)
-				return r;
+	private CommandResult runThread(Command c) {
+		checkFinished();
 		
 		Map<String, Object> command = c.getParameters();
+		BrowserThread remove = null;
 		for(BrowserThread t: threadList){
-			Thread thread = new Thread(t);
-			t.setFinished(false);
-			thread.start();
+		    if(t.getThreadId() == Integer.parseInt(c.getId()) ){
+		    	if(t.getState().equals(BrowserThread.THREAD_STATE_RUNNING))
+		    		return new CommandResult(c.getId(), "thread_is_running");
+		    	else if(t.getState().equals(BrowserThread.THREAD_STATE_FINISHED)){
+					return new CommandResult(c.getId(), "thread_is_finished");
+		    	}
+		    	else if(t.getState().equals(BrowserThread.THREAD_STATE_CREATED)){
+					Thread thread = new Thread(t);
+					t.setState(BrowserThread.THREAD_STATE_RUNNING);
+					thread.start();
+					return new CommandResult(c.getId(), "success");
+		    	}
+		    }
+		    
 		}
-		return new CommandResult(c.getId(), "success");
+	
+		return new CommandResult(c.getId(), "thread_not_found");
 		
 	}
 
 	//{"action":"PREPARE_BROWSER", "parameters": {"chrome":{"count":2,"instructions":"open:http://localhost:8080;wait:50000"}}}
-	private CommandResult prepareBrowsers(Command c) {
-		CommandResult r = finished(c);
-		if(r!=null)
-				return r;
-		threadList = new LinkedList<BrowserThread>();
+	private CommandResult prepareThread(Command c) {
+		checkFinished();
+		
+		
 		Map<String, Object> command = c.getParameters();
 		for(String key: command.keySet()){
 			if(key.toUpperCase().equals("CHROME")){
 				Map<String,Object> browserParams = (Map<String, Object>) command.get(key);
-				for(int i = 0; i< (int)browserParams.get("count"); i++){
-					System.out.println("attempting to open chromium browser from location: /usr/lib/chromium-browser/chromium-browser");
-					BrowserThread t = new ChromiumThread((i), "./chrome-drivers/ubuntu_x64","/usr/lib/chromium-browser/chromium-browser");
-					t.setInstructions((String) browserParams.get("instructions"));
-					threadList.add(t);
-				}
+				//for(int i = 0; i< (int)browserParams.get("count"); i++){
+				System.out.println("attempting to open chromium browser from location: /usr/lib/chromium-browser/chromium-browser");
+				BrowserThread t = new ChromiumThread(Integer.parseInt(c.getId()), "./chrome-drivers/ubuntu_x64",
+						"/usr/lib/chromium-browser/chromium-browser",
+						(String) browserParams.get("profile"),
+						(String) browserParams.get("callback"));
+				t.setInstructions((String) browserParams.get("instructions"));
+				t.setState(BrowserThread.THREAD_STATE_CREATED);
+				threadList.add(t);
+				
+				//}
 			}
 		}
 		return new CommandResult(c.getId(), "success");
 		
 	}
-	private CommandResult finished(Command c) {
-		boolean finished = true;
-		for(BrowserThread t : threadList){
-			finished &= t.isFinished();
-		} 
-		if(!finished)
-			return  new CommandResult(c.getId(), "error: not finished");
-		return null;
+	private void checkFinished() {
+		List<BrowserThread> rem = new LinkedList<BrowserThread>();
+		for(BrowserThread t : threadList)
+			if(t.getState().equals(BrowserThread.THREAD_STATE_FINISHED))
+				rem.add(t);
+		
+		threadList.removeAll(rem);
+		
 	}
-
+	
 }

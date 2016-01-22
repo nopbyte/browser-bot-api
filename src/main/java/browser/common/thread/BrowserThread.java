@@ -1,8 +1,17 @@
 package browser.common.thread;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
 
 public abstract class BrowserThread implements Runnable
 {
+	public static String THREAD_STATE_CREATED = "CREATED";
+	public static String THREAD_STATE_RUNNING = "RUNNING";
+	public static String THREAD_STATE_FINISHED = "FINISHED";
+	public static String THREAD_STATES[] = {THREAD_STATE_CREATED,THREAD_STATE_RUNNING,THREAD_STATE_FINISHED};
 	public enum Browser {
 	    CHROME, OPERA
 	}
@@ -11,10 +20,14 @@ public abstract class BrowserThread implements Runnable
 	
 	protected  int threadId;
 	protected String instructions;
-	protected boolean finished = true;
+	protected String state = THREAD_STATE_CREATED;
+	
+	//callback after the thread finishes.
+	protected String callback = null;
 	
 	protected BrowserThread(int threadId, String driverPath)
 	{
+		System.out.println("preparing thread with id: "+threadId);
 		this.threadId = threadId;
 		this.driverPath = driverPath;
 
@@ -34,6 +47,7 @@ public abstract class BrowserThread implements Runnable
 	@Override
 	public void run() 
 	{
+		System.out.println("running thread with id: "+threadId);
 		instructions = instructions.replaceAll("\\r|\\n", "");
 		instructions = instructions.replaceAll("\\s+:\\s+","");
 		String steps[] = instructions.split(";");
@@ -43,6 +57,23 @@ public abstract class BrowserThread implements Runnable
 		//this.quit();
 	}
 	
+	protected void doCallback() {
+		try{
+			ResponseEntity<Object> responseEntity= null;
+	    		String url = this.callback;
+	        HttpHeaders header = new HttpHeaders();
+	       
+	        RestTemplate restTemplate = new RestTemplate();
+	        responseEntity = restTemplate.getForEntity(url, Object.class);
+	        
+	        if(!responseEntity.getStatusCode().equals(HttpStatus.OK))
+	        	System.err.println("Could not call callback! "+callback);
+	        else
+	        	System.out.println("calling callback? "+callback);
+		}catch(Exception ex){
+			//TODO fix this dirty, ugly, horrible hack... 
+		}
+	}
 	//language:
 	/*
 	 * open:http://localhost:8080;
@@ -59,7 +90,7 @@ public abstract class BrowserThread implements Runnable
 		else if(s.startsWith("wait:")){
 			try {
 				s = s.replaceAll("wait:","");
-				long howLong = Long.parseLong(s);
+				long howLong = Long.parseLong(s)*1000;
 				Thread.sleep(howLong);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -89,14 +120,22 @@ public abstract class BrowserThread implements Runnable
 	
 	protected abstract void runScript(String script);
 
-
-	public boolean isFinished() {
-		return finished;
+	public String getState(){
+		return state;
+	}
+	
+	public void setState(String s){
+		this.state = s;
 	}
 
 
-	public void setFinished(boolean finished) {
-		this.finished = finished;
+	public int getThreadId() {
+		return threadId;
+	}
+
+
+	public void setThreadId(int threadId) {
+		this.threadId = threadId;
 	}
 	
 	
