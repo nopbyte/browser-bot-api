@@ -52,7 +52,12 @@ public abstract class BrowserThread implements Runnable
 		instructions = instructions.replaceAll("\\s+:\\s+","");
 		String steps[] = instructions.split(";");
 		for(String s:steps){
-			executeStep(s.trim());
+			try{
+				executeStep(s.trim());
+			}catch(Exception ex){
+				System.out.println("Exception ocurred during the excution of command "+s.trim()+" calling the callback and calling it a day... sorry...");
+				doCallback();
+			}
 		}
 		//this.quit();
 	}

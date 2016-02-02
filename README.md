@@ -5,7 +5,7 @@ This project will walk you through the process of starting a headless chromium b
 ##  Dependencies
 
 You need to install:
-*  Xvfb
+
 *  JDK 1.7 or higher
 *  maven
 *  google-chromium
