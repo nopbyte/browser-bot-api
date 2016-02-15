@@ -56,6 +56,7 @@ public abstract class BrowserThread implements Runnable
 				executeStep(s.trim());
 			}catch(Exception ex){
 				System.out.println("Exception ocurred during the excution of command "+s.trim()+" calling the callback and calling it a day... sorry...");
+				ex.printStackTrace();
 				doCallback();
 			}
 		}
@@ -63,6 +64,7 @@ public abstract class BrowserThread implements Runnable
 	}
 	
 	protected void doCallback() {
+		this.state = THREAD_STATE_FINISHED;
 		try{
 			ResponseEntity<Object> responseEntity= null;
 	    		String url = this.callback;
