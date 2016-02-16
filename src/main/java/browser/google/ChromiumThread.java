@@ -75,7 +75,20 @@ public class ChromiumThread extends BrowserThread {
 	@Override
 	protected void quit() 
 	{
-		driver.quit();
+		try{
+		driver.close();
+		}catch(Exception ex){
+			try{
+			System.err.println("Exception closing the browser attempting to quit");
+			ex.printStackTrace();
+			driver.quit();
+			}catch(Exception ex2)
+			{
+				System.err.println("It seems I couldn't quit...");
+				ex2.printStackTrace();
+			}
+		}
+		
 		super.state = BrowserThread.THREAD_STATE_FINISHED;
 		if(callback !=null && !callback.equals(""))
 			doCallback();
