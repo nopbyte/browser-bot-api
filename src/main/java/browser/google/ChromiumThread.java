@@ -75,7 +75,7 @@ public class ChromiumThread extends BrowserThread {
 	@Override
 	protected void quit() 
 	{
-		driver.close();
+		driver.quit();
 		super.state = BrowserThread.THREAD_STATE_FINISHED;
 		if(callback !=null && !callback.equals(""))
 			doCallback();
